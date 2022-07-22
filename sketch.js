@@ -1,207 +1,136 @@
-var PLAY = 1;
-var END = 0;
-var gameState = PLAY;
-
-var trex, trex_running, trex_collided;
-var ground, invisibleGround, groundImage;
-
-var cloudsGroup, cloudImage;
-var obstaclesGroup, obstacle1, obstacle2, obstacle3, obstacle4;
-var backgroundImg
-var score=0;
-var jumpSound, collidedSound;
-
-var gameOver, restart;
-
-
+  
+var towerImg, tower;
+var doorImg, door, doorsGroup;
+var climberImg, climber, climbersGroup;
+var ghost, ghostImg;
+var invisibleBlockGroup, invisibleBlock;
+var gameState = "play"
+var shizuka,shizukaiImg
+var score
 function preload(){
-  jumpSound = loadSound("jump.wav")
-  collidedSound = loadSound("collided.wav")
-  
-  backgroundImg = loadImage("backgroundImg.png")
-  sunAnimation = loadImage("sun.png");
-  
-  trex_running = loadAnimation("trex_2.png","trex_1.png","trex_3.png");
-  trex_collided = loadAnimation("trex_collided.png");
-  
-  groundImage = loadImage("ground.png");
-  
-  cloudImage = loadImage("cloud.png");
-  
-  obstacle1 = loadImage("obstacle1.png");
-  obstacle2 = loadImage("obstacle2.png");
-  obstacle3 = loadImage("obstacle3.png");
-  obstacle4 = loadImage("obstacle4.png");
-  
-  gameOverImg = loadImage("gameOver.png");
-  restartImg = loadImage("restart.png");
+  towerImg = loadImage("tower.png");
+  doorImg = loadImage("Gian.png");
+  shizuka = loadImage("shizuka.jpg");
+  climberImg = loadImage("climber.png");
+  ghostImg = loadImage("Nobita.png");
+  spookySound = loadSound("spooky.wav");
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(600,600);
+  spookySound.loop();
+  tower = createSprite(300,300);
+  tower.addImage("tower",towerImg);
+  tower.velocityY = 1;
   
-  sun = createSprite(width-50,100,10,10);
-  sun.addAnimation("sun", sunAnimation);
-  sun.scale = 0.1
+  doorsGroup = new Group();
+  climbersGroup = new Group();
+  invisibleBlockGroup = new Group();
   
-  trex = createSprite(50,height-70,20,50);
-  
-  
-  trex.addAnimation("running", trex_running);
-  trex.addAnimation("collided", trex_collided);
-  trex.setCollider('circle',0,0,350)
-  trex.scale = 0.08
-  // trex.debug=true
-  
-  invisibleGround = createSprite(width/2,height-10,width,125);  
-  invisibleGround.shapeColor = "#f4cbaa";
-  
-  ground = createSprite(width/2,height,width,2);
-  ground.addImage("ground",groundImage);
-  ground.x = width/2
-  ground.velocityX = -(6 + 3*score/100);
-  
-  gameOver = createSprite(width/2,height/2- 50);
-  gameOver.addImage(gameOverImg);
-  
-  restart = createSprite(width/2,height/2);
-  restart.addImage(restartImg);
-  
-  gameOver.scale = 0.5;
-  restart.scale = 0.1;
-
-  gameOver.visible = false;
-  restart.visible = false;
-  
- 
-  // invisibleGround.visible =false
-
-  cloudsGroup = new Group();
-  obstaclesGroup = new Group();
-  
-  score = 0;
+  ghost = createSprite(200,200,50,50);
+  ghost.scale = 0.3;
+  ghost.addImage("ghost", ghostImg);
 }
 
+
 function draw() {
-  //trex.debug = true;
-  background(backgroundImg);
-  textSize(20);
-  fill("black")
-  text("Score: "+ score,30,50);
+  background(255);
   
   
-  if (gameState===PLAY){
-    score = score + Math.round(getFrameRate()/60);
-    ground.velocityX = -(6 + 3*score/100);
+  if (gameState === "play") {
     
-    if((touches.length > 0 || keyDown("SPACE")) && trex.y  >= height-120) {
-      jumpSound.play( )
-      trex.velocityY = -10;
-       touches = [];
+    if(keyDown("left_arrow")){
+        ghost.x = ghost.x - 3;
+
+      // write a code to move left when left arrow is pressed
+    }
+    if(keyDown("right_arrow")){
+  
+          ghost.x = ghost.x + 3;
+
+      // write a code to move left when right arrow is pressed
+      
+    }
+    if(keyDown("space")){
+  
+         ghost.velocityY = -10;
+
+      // write a code to move up when space arrow is pressed
+      
+    }
+  
+  ghost.velocityY = ghost.velocityY + 0.8;
+  
+   
+      //write a condition for infinte scrolling tower
+      if(tower.y >400 ){
+        tower.y = 300
+      }
+      spawnDoors();
+
+  
+//write a code to make invisibleBlockGroup collide with ghost destroy the ghost and make gamestate to end.
+     if(climbersGroup.isTouching(ghost)){
+      ghost.velocityY = 0;
+    }
+    if(invisibleBlockGroup.isTouching(ghost) || ghost.y > 600){
+      ghost.destroy()
+      gameState = "end"
     }
     
-    trex.velocityY = trex.velocityY + 0.8
-  
-    if (ground.x < 0){
-      ground.x = ground.width/2;
-    }
-  
-    trex.collide(invisibleGround);
-    spawnClouds();
-    spawnObstacles();
-  
-    if(obstaclesGroup.isTouching(trex)){
-        collidedSound.play()
-        gameState = END;
-    }
-  }
-  else if (gameState === END) {
-    gameOver.visible = true;
-    restart.visible = true;
-    
-    //set velcity of each game object to 0
-    ground.velocityX = 0;
-    trex.velocityY = 0;
-    obstaclesGroup.setVelocityXEach(0);
-    cloudsGroup.setVelocityXEach(0);
-    
-    //change the trex animation
-    trex.changeAnimation("collided",trex_collided);
-    
-    //set lifetime of the game objects so that they are never destroyed
-    obstaclesGroup.setLifetimeEach(-1);
-    cloudsGroup.setLifetimeEach(-1);
-    
-    if(touches.length>0 || keyDown("SPACE")) {      
-      reset();
-      touches = []
-    }
-  }
-  
   
   drawSprites();
 }
-
-function spawnClouds() {
-  //write code here to spawn the clouds
-  if (frameCount % 60 === 0) {
-    var cloud = createSprite(width+20,height-300,40,10);
-    cloud.y = Math.round(random(100,220));
-    cloud.addImage(cloudImage);
-    cloud.scale = 0.5;
-    cloud.velocityX = -3;
-    
-     //assign lifetime to the variable
-    cloud.lifetime = 300;
-    
-    //adjust the depth
-    cloud.depth = trex.depth;
-    trex.depth = trex.depth+1;
-    
-    //add each cloud to the group
-    cloudsGroup.add(cloud);
-  }
-  
-}
-
-function spawnObstacles() {
-  if(frameCount % 60 === 0) {
-    var obstacle = createSprite(600,height-95,20,30);
-    obstacle.setCollider('circle',0,0,45)
-    // obstacle.debug = true
-  
-    obstacle.velocityX = -(6 + 3*score/100);
-    
-    //generate random obstacles
-    var rand = Math.round(random(1,2));
-    switch(rand) {
-      case 1: obstacle.addImage(obstacle1);
-              break;
-      case 2: obstacle.addImage(obstacle2);
-              break;
-      default: break;
-    }
-    
-    //assign scale and lifetime to the obstacle           
-    obstacle.scale = 0.3;
-    obstacle.lifetime = 300;
-    obstacle.depth = trex.depth;
-    trex.depth +=1;
-    //add each obstacle to the group
-    obstaclesGroup.add(obstacle);
+  if (gameState === "end"){
+    stroke("yellow");
+    fill("yellow");
+    textSize(30);
+    text("Game Over", 230,250)
   }
 }
 
-function reset(){
-  gameState = PLAY;
-  gameOver.visible = false;
-  restart.visible = false;
-  
-  obstaclesGroup.destroyEach();
-  cloudsGroup.destroyEach();
-  
-  trex.changeAnimation("running",trex_running);
-  
-  score = 0;
-  
+function spawnDoors()
+ {
+  //write code here to spawn the doors
+  if (frameCount % 240 === 0) {
+    var door = createSprite(200, -50);
+    door.scale=0.5
+    var enemy2 =createSprite(201,-51)
+    enemy2.sclae=0.4
+    var climber = createSprite(200,10);
+    var invisibleBlock = createSprite(200,15);
+    invisibleBlock.width = climber.width;
+    invisibleBlock.height = 2;
+    //add the random function
+    door.x=Math.round(random(120,400))
+    climber.x=door.x;
+    invisibleBlock.x=door.x
+
+    door.addImage(doorImg);
+    climber.addImage(climberImg);
+    
+    door.velocityY = 1;
+    climber.velocityY = 1;
+    invisibleBlock.velocityY = 1;
+
+    //change the depth of the ghost and door
+    
+     
+ghost.depth = door.depth;
+    ghost.depth +=1;
+    
+    //assign lifetime for the  door, climber and invisible block
+
+ door.lifetime = 800;
+ enemy2.lifetime=880;
+    climber.lifetime = 800;
+    invisibleBlock.lifetime = 800;
+    //add each obstacle to the group obstaclesGroup.add(obstacle);here  obstacle are door, climber and invisible block
+    
+     doorsGroup.add(door);
+    invisibleBlock.debug = true;
+    climbersGroup.add(climber);
+    invisibleBlockGroup.add(invisibleBlock);
+  }
 }
+
